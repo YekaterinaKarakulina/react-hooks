@@ -78,8 +78,7 @@ const Notification = () => {
   )
 }
 
-const PlanetInfo = ({ id }) => {
-
+const usePlanetInfo = (id) => {
   const [planetName, setPlanetName] = useState('');
 
   useEffect(() => {
@@ -88,7 +87,14 @@ const PlanetInfo = ({ id }) => {
       .then(res => res.json())
       .then(data => !canceled && setPlanetName(data.name))
     return () => canceled = true;
-  }, [id])
+  }, [id]);
+
+  return planetName;
+}
+
+const PlanetInfo = ({ id }) => {
+
+  const planetName = usePlanetInfo(id);
 
   return (
     <div>{id} - {planetName}</div>
