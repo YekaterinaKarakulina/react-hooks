@@ -14,6 +14,7 @@ const App = () => {
           onClick={() => setVisible(false)}>hide</button>
         <ClassCounter value={value} />
         <HookCounter value={value} />
+        <Notification />
       </div>
     )
   } else {
@@ -23,10 +24,20 @@ const App = () => {
 
 const HookCounter = ({ value }) => {
 
+  // useEffect(() => console.log('mount'), []); // componentDidMount
+
+  // useEffect(() => console.log('update')); // ~componentDidUpdate
+
+  // useEffect(() => () => console.log('unmount'), []); // componentWillUnmount
+
+
   useEffect(() => {
-    console.log('use effect');
-    return () => console.log('clear');
-  }, [value])
+    console.log('mount');
+    return () => console.log('unmount');
+  }, []);
+
+  useEffect(() => console.log('update'));
+
   return <p>{value}</p>
 }
 
@@ -48,6 +59,22 @@ class ClassCounter extends React.Component {
     return <p>{this.props.value}</p>
   }
 
+}
+
+const Notification = () => {
+
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setVisible(false), 1500);
+    return () => clearTimeout(timeout);
+  }, [])
+
+  return (
+    <div>
+      {visible && <p>Hello</p>}
+    </div>
+  )
 }
 
 ReactDOM.render(
