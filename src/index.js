@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 
 const App = () => {
@@ -12,9 +12,6 @@ const App = () => {
           onClick={() => setValue((value) => value + 1)}>+</button>
         <button
           onClick={() => setVisible(false)}>hide</button>
-        <ClassCounter value={value} />
-        <HookCounter value={value} />
-        <Notification />
         <PlanetInfo id={value} />
       </div>
     )
@@ -23,81 +20,59 @@ const App = () => {
   }
 }
 
-const HookCounter = ({ value }) => {
-
-  // useEffect(() => console.log('mount'), []); // componentDidMount
-
-  // useEffect(() => console.log('update')); // ~componentDidUpdate
-
-  // useEffect(() => () => console.log('unmount'), []); // componentWillUnmount
-
-
-  useEffect(() => {
-    console.log('mount');
-    return () => console.log('unmount');
-  }, []);
-
-  useEffect(() => console.log('update'));
-
-  return <p>{value}</p>
+const getPlanet = (id) => {
+  return fetch(`https://swapi.dev/api/planets/${id}`)
+    .then(res => res.json())
+    .then(data => data)
 }
 
-class ClassCounter extends React.Component {
+const useRequest = (request) => {
 
-  componentDidMount() {
-    console.log('class: mount');
-  }
+  const initialState = useMemo(() => ({
+    data: null,
+    loading: true,
+    error: null
+  }), []);
 
-  componentDidUpdate(props) {
-    console.log('class: update')
-  }
-
-  componentWillUnmount() {
-    console.log('class: unmount');
-  }
-
-  render() {
-    return <p>{this.props.value}</p>
-  }
-
-}
-
-const Notification = () => {
-
-  const [visible, setVisible] = useState(true);
+  const [dataState, setDataState] = useState(initialState);
 
   useEffect(() => {
-    const timeout = setTimeout(() => setVisible(false), 1500);
-    return () => clearTimeout(timeout);
-  }, [])
-
-  return (
-    <div>
-      {visible && <p>Hello</p>}
-    </div>
-  )
+    setDataState(initialState)
+    let canceled = false;
+    request()
+      .then(data => !canceled && setDataState({
+        data,
+        loading: false,
+        error: null
+      }))
+      .catch(error => !canceled && setDataState({
+        data: null,
+        loading: false,
+        error: error
+      }))
+    return () => canceled = true;
+  }, [request, initialState]);
+  return dataState;
 }
 
 const usePlanetInfo = (id) => {
-  const [planetName, setPlanetName] = useState('');
-
-  useEffect(() => {
-    let canceled = false;
-    fetch(`https://swapi.dev/api/planets/${id}`)
-      .then(res => res.json())
-      .then(data => !canceled && setPlanetName(data.name))
-    return () => canceled = true;
-  }, [id]);
-
-  return planetName;
+  const request = useCallback(() => getPlanet(id), [id]);
+  return useRequest(request);
 }
 
 const PlanetInfo = ({ id }) => {
+  const { data, loading, error } = usePlanetInfo(id);
 
-  const planetName = usePlanetInfo(id);
+  if (error) {
+    return <div>Something wrong</div>
+  }
+
+  if (loading) {
+    return <div>loading...</div>
+  }
 
   return (
-    <div>{id} - {planetName}</div>
+    <div>{id} - {data.name}</div>
   )
 }
 
